@@ -1,0 +1,14 @@
+{
+	"extends": "./tsconfig.base.json",
+	"references": [
+		{
+			"path": "./platypus-backend"
+		},
+		{
+			"path": "./platypus-frontend"
+		}
+	],
+	"files": [],
+	"include": [],
+	"exclude": ["**/node_modules"]
+}
