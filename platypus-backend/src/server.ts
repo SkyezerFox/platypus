@@ -3,15 +3,11 @@ import { createServer } from "http";
 import { createLogger, Logger } from "winston";
 import { Console } from "winston/lib/winston/transports";
 
-import { Partional } from "@fullstack-template/shared";
+import { Partional } from "./types";
 
-import {
-	defaultNotFoundHandler,
-	MiddlewareHandler as ServerHandler,
-	useHelmet,
-	useJsonBodyParsing,
-	useMorgan,
-} from "./middleware";
+import helmet from "helmet";
+import morgan from "morgan";
+import { notFound } from "./errors";
 
 /**
  * An interface of available server options.
@@ -32,7 +28,7 @@ export const DEFAULT_OPTIONS: ServerOptions = {
 /**
  * A generic HTTP server implementation.
  */
-export class Server<T extends Server<T>> {
+export class PlatypusServer {
 	/**
 	 * The server options. Used when creating the HTTP listener.
 	 */
@@ -53,54 +49,21 @@ export class Server<T extends Server<T>> {
 	 */
 	readonly logger: Logger;
 
-	readonly beforeListenHandlers: ServerHandler<T>[] = [];
-
-	constructor(options: Partional<ServerOptions>) {
+	constructor(options?: Partional<ServerOptions>) {
 		// configure default options.
 		this.options = { ...DEFAULT_OPTIONS, ...options };
 		// create the winston logger
 		this.logger = createLogger({ transports: [new Console()], level: this.options.level });
-	}
-
-	/**
-	 * Add a method to run before the server starts listening.
-	 * @param handlers An array of handlers to run before the server starts listening
-	 */
-	beforeListen(...handlers: ServerHandler<T>[]) {
-		this.beforeListenHandlers.push(...handlers);
-		return this;
-	}
-
-	/**
-	 * Add middleware to this server.
-	 * @param handler The middleware adder to run.
-	 */
-	addMiddleware(...handlers: ServerHandler<T>[]) {
-		// iterate over handlers an execute
-		handlers.forEach((v) => v(this as unknown as T));
-		return this;
-	}
-
-	/**
-	 * Set up the express application, plus any extra middleware.
-	 */
-	useDefaultMiddleware() {
-		// add middleware
-		this.addMiddleware(useMorgan, useHelmet, useJsonBodyParsing);
-		return this;
+		// setup middleware
+		this.express.use(express.json(), helmet(), morgan("common", { stream: { write: (msg) => this.logger.http(msg) } }));
 	}
 
 	/**
 	 * Start the server listening on the target port.
 	 */
-	async listen() {
-		// override listen handlers.
-		for (const handler of this.beforeListenHandlers) {
-			await handler(this as unknown as T);
-		}
-		// add default not found handler
-		this.addMiddleware(defaultNotFoundHandler);
-
+	async listen(): Promise<void> {
+		// default not found handler
+		this.express.use("*", (_, res) => notFound(res));
 		// start listening on port specified in options.
 		this.logger.info("Listening on port " + this.options.port);
 		this.http.listen(this.options.port);
