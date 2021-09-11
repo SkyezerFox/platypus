@@ -3,6 +3,10 @@
 	"version": "1.0.0",
 	"author": "SkyezerFox <actuallyori@gmail.com>",
 	"private": true,
+	"workspaces": [
+		"./platypus-backend",
+		"./platypus-frontend"
+	],
 	"devDependencies": {
 		"@commitlint/cli": "^13.1.0",
 		"@commitlint/config-conventional": "^13.1.0",
@@ -16,11 +20,10 @@
 		"typescript": "^4.4.2"
 	},
 	"scripts": {
-		"prepare": "husky install && yarn workspaces run prepare"
+		"prepare": "husky install"
 	},
 	"lint-staged": {
 		"*.{js,ts,tsx}": "eslint --cache --fix",
-		"*.{js,ts,tsx,css,md}": "prettier --write",
-		"*.rs": "cargo fmt --"
+		"*.{js,ts,tsx,css,md,yml}": "prettier --write"
 	}
 }
